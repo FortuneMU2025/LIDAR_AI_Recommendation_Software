@@ -1,49 +1,50 @@
 """
-Point cloud data validation module.
+Validator for point cloud data.
 """
 
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 import numpy as np
 
 class PointCloudValidator:
     """Validator for point cloud data."""
     
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Optional[Dict] = None):
         """
-        Initialize validator.
+        Initialize the validator.
         
         Args:
-            config: Configuration dictionary with validation parameters:
+            config: Optional configuration dictionary with parameters:
                 - max_points: Maximum number of points allowed
                 - min_points: Minimum number of points required
                 - coord_range: Tuple of (min, max) for coordinate values
                 - intensity_range: Tuple of (min, max) for intensity values
         """
-        self.config = config or {}
-        self.max_points = self.config.get('max_points', 1000000)
-        self.min_points = self.config.get('min_points', 100)
-        self.coord_range = self.config.get('coord_range', (-1000, 1000))
-        self.intensity_range = self.config.get('intensity_range', (0, 1))
+        config = config or {}
+        self.max_points = config.get('max_points', 100000)
+        self.min_points = config.get('min_points', 100)
+        self.coord_range = config.get('coord_range', (-100, 100))
+        self.intensity_range = config.get('intensity_range', (0, 1))
     
     def validate(self, points: np.ndarray) -> Tuple[bool, str]:
         """
         Validate point cloud data.
         
         Args:
-            points: Point cloud data with shape (N, 4)
+            points: Point cloud data to validate
             
         Returns:
             Tuple of (is_valid, error_message)
         """
         # Check shape
         if len(points.shape) != 2 or points.shape[1] != 4:
-            return False, f"Invalid shape: expected (N, 4), got {points.shape}"
+            return False, "Invalid shape: point cloud must have shape (N, 4)"
             
         # Check number of points
-        if len(points) > self.max_points:
-            return False, f"Too many points: {len(points)} > {self.max_points}"
-        if len(points) < self.min_points:
-            return False, f"Too few points: {len(points)} < {self.min_points}"
+        num_points = len(points)
+        if num_points > self.max_points:
+            return False, f"too many points: {num_points} > {self.max_points}"
+        if num_points < self.min_points:
+            return False, f"too few points: {num_points} < {self.min_points}"
             
         # Check for NaN values
         if np.isnan(points).any():
@@ -54,34 +55,45 @@ class PointCloudValidator:
             return False, "Point cloud contains infinite values"
             
         # Check coordinate ranges
-        coord_min, coord_max = self.coord_range
-        if (points[:, :3] < coord_min).any() or (points[:, :3] > coord_max).any():
-            return False, f"Coordinates outside valid range [{coord_min}, {coord_max}]"
+        coords = points[:, :3]
+        if (coords < self.coord_range[0]).any() or (coords > self.coord_range[1]).any():
+            return False, f"Coordinates out of range: must be between {self.coord_range}"
             
         # Check intensity range
-        intensity_min, intensity_max = self.intensity_range
-        if (points[:, 3] < intensity_min).any() or (points[:, 3] > intensity_max).any():
-            return False, f"Intensities outside valid range [{intensity_min}, {intensity_max}]"
+        intensity = points[:, 3]
+        if (intensity < self.intensity_range[0]).any() or (intensity > self.intensity_range[1]).any():
+            return False, f"Intensity out of range: must be between {self.intensity_range}"
             
-        return True, "Point cloud is valid"
+        return True, ""
     
     def get_statistics(self, points: np.ndarray) -> Dict:
         """
         Get statistics about the point cloud.
         
         Args:
-            points: Point cloud data with shape (N, 4)
+            points: Point cloud data
             
         Returns:
-            Dictionary containing point cloud statistics
+            Dict containing various statistics
         """
+        coords = points[:, :3]
+        intensity = points[:, 3]
+        
+        # Calculate ranges
+        x_min, y_min, z_min = coords.min(axis=0)
+        x_max, y_max, z_max = coords.max(axis=0)
+        
+        # Calculate density (points per cubic meter)
+        volume = (x_max - x_min) * (y_max - y_min) * (z_max - z_min)
+        density = len(points) / volume if volume > 0 else 0
+        
         return {
             'num_points': len(points),
-            'x_range': (points[:, 0].min(), points[:, 0].max()),
-            'y_range': (points[:, 1].min(), points[:, 1].max()),
-            'z_range': (points[:, 2].min(), points[:, 2].max()),
-            'intensity_range': (points[:, 3].min(), points[:, 3].max()),
-            'mean_intensity': points[:, 3].mean(),
-            'std_intensity': points[:, 3].std(),
-            'density': len(points) / (points[:, :3].max(axis=0) - points[:, :3].min(axis=0)).prod()
+            'x_range': (float(x_min), float(x_max)),
+            'y_range': (float(y_min), float(y_max)),
+            'z_range': (float(z_min), float(z_max)),
+            'intensity_range': (float(intensity.min()), float(intensity.max())),
+            'mean_intensity': float(intensity.mean()),
+            'std_intensity': float(intensity.std()),
+            'density': float(density)
         } 

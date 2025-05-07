@@ -5,7 +5,12 @@ Loader for PCD format LiDAR data.
 from pathlib import Path
 from typing import Dict, Optional, Union
 import numpy as np
-import open3d as o3d
+
+try:
+    import open3d as o3d
+    HAS_OPEN3D = True
+except ImportError:
+    HAS_OPEN3D = False
 
 from .base_loader import BaseLoader
 
@@ -21,6 +26,9 @@ class PCDLoader(BaseLoader):
                 - use_intensity: Whether to use intensity from PCD (default: True)
                 - use_color: Whether to use color information (default: False)
         """
+        if not HAS_OPEN3D:
+            raise ImportError("Open3D is required for PCD support. Please install it with: pip install open3d")
+            
         super().__init__(config)
         self.supported_extensions = ['.pcd']
         self.use_intensity = config.get('use_intensity', True)
@@ -40,6 +48,9 @@ class PCDLoader(BaseLoader):
             FileNotFoundError: If file doesn't exist
             ValueError: If file format is invalid
         """
+        if not HAS_OPEN3D:
+            raise ImportError("Open3D is required for PCD support")
+            
         file_path = Path(file_path)
         if not file_path.exists():
             raise FileNotFoundError(f"LiDAR file not found: {file_path}")

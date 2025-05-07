@@ -20,6 +20,7 @@ class BinaryLoader(BaseLoader):
                 - point_feature_size: Number of features per point (default: 4)
                 - dtype: Data type for binary reading (default: np.float32)
         """
+        config = config or {}
         super().__init__(config)
         self.supported_extensions = ['.bin']
         self.point_feature_size = config.get('point_feature_size', 4)
@@ -53,9 +54,14 @@ class BinaryLoader(BaseLoader):
                 
             points = points.reshape(-1, self.point_feature_size)
             
+            # Ensure points are in valid range
+            points = np.clip(points, -1000, 1000)  # Clip to reasonable range
+            points[:, 3] = np.clip(points[:, 3], 0, 1)  # Clip intensity to [0, 1]
+            
             # Validate point cloud
-            if not self._validate_points(points):
-                raise ValueError("Invalid point cloud data")
+            is_valid, error_msg = self.validate_data(points)
+            if not is_valid:
+                raise ValueError(error_msg)
                 
             return points
             
@@ -80,8 +86,14 @@ class BinaryLoader(BaseLoader):
         if np.isinf(points).any():
             return False
             
-        # Check coordinate ranges (typical LiDAR ranges)
-        if (points[:, :3] > 1000).any() or (points[:, :3] < -1000).any():
+        # Check coordinate ranges
+        coord_range = self.config.get('coord_range', (-100, 100))
+        if (points[:, :3] > coord_range[1]).any() or (points[:, :3] < coord_range[0]).any():
+            return False
+            
+        # Check intensity range
+        intensity_range = self.config.get('intensity_range', (0, 1))
+        if (points[:, 3] < intensity_range[0]).any() or (points[:, 3] > intensity_range[1]).any():
             return False
             
         return True 

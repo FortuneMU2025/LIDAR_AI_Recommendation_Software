@@ -1,13 +1,16 @@
 """
-LiDAR-based Crowd Management System
+Crowd Management System using LiDAR data.
 """
 
-__version__ = '1.0.0'
+__version__ = '0.1.0'
 
-from .detector import CrowdDetector
-from .analyzer import CrowdAnalyzer
-from .visualizer import CrowdVisualizer
-from .strategies import CrowdManager
-from .config import DEFAULT_CONFIG
+from .data.loaders import LoaderFactory, BaseLoader, BinaryLoader, PCDLoader
+from .data.validators import PointCloudValidator
 
-__all__ = ['CrowdDetector', 'CrowdAnalyzer', 'CrowdVisualizer', 'CrowdManager', 'DEFAULT_CONFIG'] 
+__all__ = [
+    'LoaderFactory',
+    'BaseLoader',
+    'BinaryLoader',
+    'PCDLoader',
+    'PointCloudValidator'
+] 

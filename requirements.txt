@@ -2,10 +2,9 @@
 numpy>=1.21.0
 open3d>=0.15.0
 pathlib>=1.0.1
-typing>=3.7.4.3
+typing>=3.7.4
 
 # Development dependencies
-pytest>=6.0.0
-pytest-cov>=2.0.0
-black>=21.5b2
-flake8>=3.9.0 
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0 
