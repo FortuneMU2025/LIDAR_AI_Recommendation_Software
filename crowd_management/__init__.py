@@ -1,6 +1,8 @@
 """
-Crowd Management System using LiDAR data.
+Crowd Management package for processing LiDAR point clouds.
 """
+
+from .pipeline import process_point_cloud
 
 __version__ = '0.1.0'
 

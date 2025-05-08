@@ -10,6 +10,7 @@ A robust LiDAR data processing pipeline for crowd management and analysis.
 - Coordinate system transformations
 - Comprehensive logging and validation
 - Modular and extensible architecture
+- User-friendly command-line interface
 
 ## Installation
 
@@ -35,32 +36,54 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Basic Usage
+### Command-Line Interface
 
-```python
-from crowd_management.lidar_processor import LiDARProcessor
-from crowd_management.config import DEFAULT_CONFIG
+The easiest way to process your LiDAR data is using the command-line interface:
 
-# Initialize processor
-processor = LiDARProcessor(DEFAULT_CONFIG)
+```bash
+# Process a single file
+python -m crowd_management.cli path/to/your/lidar.bin
 
-# Load and process LiDAR data
-points = processor.load_data("path/to/your/lidar.bin")
-processed_points = processor.preprocess(points)
-transformed_points = processor.transform_coordinates(processed_points)
+# Process all files in a directory
+python -m crowd_management.cli path/to/your/lidar/directory
+
+# Specify output directory
+python -m crowd_management.cli path/to/your/lidar.bin --output-dir results
+
+# Use custom configuration
+python -m crowd_management.cli path/to/your/lidar.bin --config my_config.json
+
+# Disable visualizations
+python -m crowd_management.cli path/to/your/lidar.bin --no-visualizations
 ```
 
 ### Configuration
 
-The pipeline can be configured through the `DEFAULT_CONFIG` dictionary:
+You can customize the processing pipeline by creating a configuration file. Copy `crowd_management/config_template.json` and modify it according to your needs:
 
-```python
-config = {
-    'point_feature_size': 4,  # x, y, z, intensity
-    'max_points': 100000,     # Maximum points to process
-    'voxel_size': [0.1, 0.1, 0.1],  # Voxel size for downsampling
-    'output_dir': 'output',   # Output directory
-    'save_visualizations': True  # Save visualization results
+```json
+{
+    "point_feature_size": 4,
+    "max_points": 100000,
+    "voxel_size": [0.1, 0.1, 0.1],
+    "output_dir": "output",
+    "save_visualizations": true,
+    "visualization": {
+        "point_size": 2,
+        "color_map": "viridis",
+        "save_format": "png",
+        "resolution": [1920, 1080]
+    },
+    "processing": {
+        "remove_nan": true,
+        "remove_zero_intensity": true,
+        "downsample": true,
+        "voxelize": true
+    },
+    "coordinate_system": {
+        "source": "sensor",
+        "target": "world"
+    }
 }
 ```
 
@@ -96,6 +119,13 @@ The pipeline supports two main LiDAR data formats:
    - Supports sensor-to-world transformations
    - Handles coordinate system conversions
 
+### Output
+
+The processed data is saved in the following format:
+- Processed point clouds: `.npy` files
+- Visualizations: `.png` files (if enabled)
+- Log files: `.log` files with processing details
+
 ## Contributing
 
 1. Fork the repository
@@ -114,7 +144,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 .
 ├── crowd_management/
 │   ├── __init__.py
+│   ├── cli.py
 │   ├── config.py
+│   ├── config_template.json
 │   └── lidar_processor.py
 ├── test_lidar_processor.py
 ├── requirements.txt
